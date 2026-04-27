@@ -1,4 +1,4 @@
-**DebugQuest**
+**Debug Levelup**
 A web-based platform designed for programmers to improve their debugging skills through interactive challenges, 
 code analysis, and smart error detection.
 **How to Run:**
