@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DebugQuest — AI Debugging Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ff:'Outfit',sans-serif;--fm:'JetBrains Mono',monospace;
+  --g:#1D9E75;--gl:#E1F5EE;--gd:#085041;--gm:#5DCAA5;
+  --a:#BA7517;--al:#FAEEDA;--ad:#412402;
+  --r:#A32D2D;--rl:#FCEBEB;--rm:#F09595;
+  --b:#185FA5;--bl:#E6F1FB;--bd:#042C53;
+  --p:#534AB7;--pl:#EEEDFE;--pd:#26215C;
+  --bg:#0d0d0f;--bg2:#16161a;--bg3:#1e1e24;--bg4:#252530;
+  --text:#f0ede6;--text2:#9b9b9e;--text3:#5a5a60;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --radius:8px;--radius-lg:12px;--radius-xl:16px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --accent:#1D9E75;
+}
+[data-theme="light"]{
+  --bg:#f4f3ef;--bg2:#ffffff;--bg3:#eceae4;--bg4:#e5e3dc;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#aaa9a4;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+}
+html,body{height:100%;font-family:var(--ff);background:var(--bg);color:var(--text);font-size:14px;overflow:hidden;}
+
+/* ===== FULLSCREEN LAYOUT ===== */
+#app-shell{display:flex;height:100vh;width:100vw;overflow:hidden;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.3s;}
+.sidebar.collapsed{width:60px;}
+.sb-logo{padding:18px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.sb-logo-icon{width:32px;height:32px;background:var(--g);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:13px;font-weight:600;color:#fff;flex-shrink:0;}
+.sb-logo-text{font-weight:700;font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;}
+.sb-logo-text span{color:var(--g);}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 8px;}
+.sb-section{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:10px 8px 5px;white-space:nowrap;overflow:hidden;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:var(--radius);cursor:pointer;color:var(--text2);transition:all 0.15s;margin-bottom:2px;white-space:nowrap;overflow:hidden;}
+.sb-item:hover{background:var(--bg3);color:var(--text);}
+.sb-item.active{background:var(--gl);color:var(--gd);}
+[data-theme="light"] .sb-item.active{color:var(--gd);}
+.sb-icon{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.sb-label{font-size:13px;font-weight:500;}
+.sb-badge{margin-left:auto;background:var(--g);color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;flex-shrink:0;}
+.sb-bottom{padding:10px 8px;border-top:0.5px solid var(--border);flex-shrink:0;}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius);cursor:pointer;transition:all 0.15s;overflow:hidden;}
+.sb-user:hover{background:var(--bg3);}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:var(--gl);color:var(--gd);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-user-info{overflow:hidden;}
+.sb-user-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-role{font-size:11px;color:var(--text2);white-space:nowrap;}
+
+/* ===== MAIN CONTENT ===== */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+
+/* ===== TOP BAR ===== */
+.topbar{height:52px;flex-shrink:0;border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--bg2);}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);flex:1;}
+.topbar-stats{display:flex;align-items:center;gap:14px;}
+.tstat{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+.tstat b{color:var(--text);font-weight:600;}
+.xp-bar-wrap{width:64px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.xp-bar{height:100%;background:var(--g);border-radius:2px;transition:width 0.4s;}
+.topbar-btns{display:flex;align-items:center;gap:8px;}
+.icon-btn{width:34px;height:34px;border-radius:var(--radius);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.15s;}
+.icon-btn:hover{background:var(--bg3);color:var(--text);}
+
+/* ===== PANELS ===== */
+.panel{display:none;flex:1;overflow:auto;padding:24px;}
+.panel.active{display:block;}
+.panel-split{display:none;flex:1;overflow:hidden;}
+.panel-split.active{display:flex;}
+
+/* ===== SHARED ===== */
+.btn{padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:var(--ff);transition:all 0.15s;}
+.btn:hover{background:var(--bg3);}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--g);color:#fff;border-color:var(--g);}
+.btn-primary:hover{opacity:0.88;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+.section-lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-green{background:var(--gl);color:var(--gd);}
+.badge-red{background:var(--rl);color:var(--r);}
+.badge-amber{background:var(--al);color:var(--ad);}
+.badge-blue{background:var(--bl);color:var(--b);}
+.badge-purple{background:var(--pl);color:var(--pd);}
+.pill-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+.pill{padding:5px 13px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2);font-family:var(--ff);transition:all 0.15s;}
+.pill:hover{background:var(--bg3);color:var(--text);}
+.pill.active{background:var(--pl);color:var(--pd);border-color:#AFA9EC;}
+[data-theme="light"] .pill.active{background:var(--pl);color:var(--pd);}
+
+/* ===== AUTH ===== */
+#auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.auth-wrap{width:100%;max-width:420px;}
+.auth-hero{text-align:center;margin-bottom:32px;}
+.auth-hero-icon{width:60px;height:60px;background:var(--g);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:26px;font-weight:600;color:#fff;margin:0 auto 16px;}
+.auth-hero h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+.auth-hero p{font-size:14px;color:var(--text2);}
+.auth-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-xl);padding:28px;box-shadow:var(--shadow);}
+.auth-tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:22px;}
+.auth-tab{flex:1;text-align:center;padding:10px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;transition:all 0.2s;}
+.auth-tab.active{color:var(--g);border-bottom-color:var(--g);}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;display:block;}
+.form-input{width:100%;padding:10px 13px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--ff);background:var(--bg3);color:var(--text);outline:none;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--g);}
+.btn-full{width:100%;padding:11px;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--ff);border:none;background:var(--g);color:#fff;transition:all 0.15s;}
+.btn-full:hover{opacity:0.9;}
+.divider{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:12px;color:var(--text3);}
+.divider::before,.divider::after{content:'';flex:1;height:0.5px;background:var(--border);}
+.social-btns{display:flex;flex-direction:column;gap:9px;}
+.btn-social{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;background:var(--bg3);color:var(--text);font-family:var(--ff);transition:all 0.15s;}
+.btn-social:hover{background:var(--bg4);}
+.si{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.auth-error{background:var(--rl);color:var(--r);border:0.5px solid var(--rm);border-radius:var(--radius);padding:10px 13px;font-size:12px;margin-bottom:12px;display:none;}
+.demo-note{text-align:center;font-size:12px;color:var(--text3);margin-top:14px;}
+
+/* ===== DASHBOARD ===== */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.dash-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:18px 16px;display:flex;flex-direction:column;gap:6px;}
+.dash-card-icon{font-size:20px;margin-bottom:4px;}
+.dash-num{font-size:28px;font-weight:700;font-family:var(--fm);color:var(--text);}
+.dash-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;}
+.dash-delta{font-size:11px;font-weight:600;}
+.delta-up{color:var(--g);}
+.delta-dn{color:var(--r);}
+.dash-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-3col{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+.progress-bar-wrap{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;margin-top:4px;}
+.progress-bar{height:100%;border-radius:4px;transition:width 0.5s;}
+.skill-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.skill-name{font-size:12px;color:var(--text);width:80px;flex-shrink:0;}
+.skill-pct{font-size:11px;color:var(--text2);margin-left:auto;width:30px;text-align:right;flex-shrink:0;}
+.activity-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.activity-text{font-size:12px;color:var(--text);flex:1;}
+.activity-time{font-size:11px;color:var(--text3);}
+
+/* ===== EDITOR ===== */
+.editor-panel-left{flex:1;display:flex;flex-direction:column;border-right:0.5px solid var(--border);overflow:hidden;}
+.editor-panel-right{width:340px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;}
+.editor-toolbar{height:44px;flex-shrink:0;border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;background:var(--bg2);}
+.editor-lang-badge{padding:3px 10px;border-radius:var(--radius);background:var(--bg3);border:0.5px solid var(--border2);font-size:12px;font-family:var(--fm);color:var(--text2);}
+.editor-area{flex:1;overflow:auto;position:relative;}
+.line-numbers{position:absolute;top:0;left:0;width:40px;padding:14px 0;text-align:center;font-family:var(--fm);font-size:12px;line-height:1.75;color:var(--text3);background:var(--bg2);border-right:0.5px solid var(--border);pointer-events:none;user-select:none;}
+.code-textarea{width:100%;height:100%;min-height:300px;padding:14px 14px 14px 56px;font-family:var(--fm);font-size:13px;line-height:1.75;background:var(--bg3);color:var(--text);border:none;outline:none;resize:none;tab-size:4;}
+.editor-status{height:28px;flex-shrink:0;border-top:0.5px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;background:var(--bg2);}
+.es-item{font-size:11px;color:var(--text3);font-family:var(--fm);}
+.es-item b{color:var(--text2);}
+.ai-panel{flex:1;overflow:auto;padding:16px;}
+.ai-panel-hdr{height:44px;flex-shrink:0;border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 16px;background:var(--bg2);}
+.ai-panel-hdr-title{font-size:13px;font-weight:600;color:var(--text);}
+.issue-card{padding:12px;border-radius:var(--radius);margin-bottom:8px;border:0.5px solid;}
+.ie{background:var(--rl);border-color:var(--rm);color:var(--r);}
+.iw{background:var(--al);border-color:#FAC775;color:var(--ad);}
+.io{background:var(--gl);border-color:var(--gm);color:var(--gd);}
+.ii{background:var(--bl);border-color:#85B7EB;color:var(--b);}
+.it{font-size:12px;font-weight:600;margin-bottom:3px;}
+.ib{font-size:12px;line-height:1.55;}
+.ifix{font-family:var(--fm);font-size:11px;margin-top:7px;padding:6px 9px;background:rgba(0,0,0,0.1);border-radius:5px;white-space:pre-wrap;word-break:break-all;}
+.complexity-row{display:flex;gap:8px;margin-bottom:14px;}
+.complexity-card{flex:1;background:var(--bg3);border-radius:var(--radius);padding:10px 12px;text-align:center;}
+.comp-val{font-size:16px;font-weight:700;font-family:var(--fm);color:var(--text);}
+.comp-lbl{font-size:10px;color:var(--text2);margin-top:2px;}
+.score-ring{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.score-circle{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:3px solid var(--g);flex-shrink:0;}
+.score-num{font-size:18px;font-weight:700;font-family:var(--fm);color:var(--g);}
+.score-lbl-small{font-size:9px;color:var(--text2);}
+
+/* ===== CHATBOT ===== */
+.chat-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.msg{max-width:80%;display:flex;flex-direction:column;gap:4px;}
+.msg.user{align-self:flex-end;}
+.msg.ai{align-self:flex-start;}
+.msg-bubble{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;}
+.msg.user .msg-bubble{background:var(--g);color:#fff;border-bottom-right-radius:3px;}
+.msg.ai .msg-bubble{background:var(--bg2);border:0.5px solid var(--border);border-bottom-left-radius:3px;color:var(--text);}
+.msg-time{font-size:10px;color:var(--text3);padding:0 4px;}
+.msg.user .msg-time{text-align:right;}
+.chat-input-wrap{padding:12px 16px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--bg2);}
+.chat-input{flex:1;padding:9px 13px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;font-family:var(--ff);outline:none;resize:none;max-height:100px;}
+.chat-input:focus{border-color:var(--g);}
+.chat-send{width:36px;height:36px;border-radius:var(--radius);background:var(--g);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:opacity 0.15s;}
+.chat-send:hover{opacity:0.85;}
+.chat-suggestions{padding:12px 16px 0;display:flex;gap:7px;flex-wrap:wrap;}
+.chat-sug{padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;transition:all 0.15s;}
+.chat-sug:hover{background:var(--bg4);color:var(--text);}
+
+/* ===== GAME PANEL ===== */
+.game-layout{display:grid;grid-template-columns:1fr 380px;gap:0;height:100%;overflow:hidden;}
+.game-main{overflow:auto;padding:20px;border-right:0.5px solid var(--border);}
+.game-side{overflow:auto;padding:16px;background:var(--bg2);}
+.prog-row{display:flex;gap:6px;margin-bottom:16px;}
+.ps{flex:1;height:4px;border-radius:2px;background:var(--bg3);}
+.ps.done{background:var(--g);}
+.ps.cur{background:var(--gm);}
+.ch-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.ch-title{font-size:16px;font-weight:600;color:var(--text);}
+.ch-desc{font-size:13px;color:var(--text2);margin-top:4px;margin-bottom:14px;line-height:1.55;}
+.code-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.code-ed{width:100%;min-height:160px;font-family:var(--fm);font-size:12.5px;line-height:1.75;padding:14px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);resize:vertical;outline:none;transition:border-color 0.2s;tab-size:4;}
+.code-ed:focus{border-color:var(--g);}
+.hint{background:var(--al);border:0.5px solid #FAC775;border-radius:var(--radius);padding:10px 13px;font-size:12px;color:var(--ad);margin-top:10px;display:none;line-height:1.5;}
+.hint.on{display:block;}
+.fb{margin-top:10px;padding:11px 13px;border-radius:var(--radius);font-size:13px;line-height:1.6;display:none;}
+.fb.on{display:block;}
+.fb-ok{background:var(--gl);border:0.5px solid var(--gm);color:var(--gd);}
+.fb-err{background:var(--rl);border:0.5px solid var(--rm);color:var(--r);}
+.fb-info{background:var(--bl);border:0.5px solid #85B7EB;color:var(--b);}
+.nxt{margin-top:10px;display:none;gap:8px;flex-wrap:wrap;}
+.nxt.on{display:flex;}
+.challenge-meta{display:flex;flex-direction:column;gap:12px;}
+.meta-card{background:var(--bg3);border-radius:var(--radius);padding:12px;}
+.meta-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
+.leaderboard-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px;}
+.leaderboard-row:last-child{border-bottom:none;}
+.lb-rank{font-family:var(--fm);color:var(--text3);width:16px;flex-shrink:0;}
+.lb-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.lb-nm{flex:1;color:var(--text);}
+.lb-pts{font-family:var(--fm);font-size:11px;color:var(--text2);}
+.lb-row-me{background:rgba(29,158,117,0.1);border-radius:var(--radius);}
+
+/* ===== MCQ ===== */
+.mcq-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:12px;}
+.mcq-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+.mcq-num{font-size:11px;color:var(--text3);font-family:var(--fm);}
+.mcq-q{font-size:14px;font-weight:500;color:var(--text);margin-bottom:12px;line-height:1.55;}
+.mcq-opts{display:flex;flex-direction:column;gap:7px;}
+.mcq-opt{display:flex;align-items:center;gap:10px;padding:10px 13px;border:0.5px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text);transition:all 0.15s;}
+.mcq-opt:hover{background:var(--bg3);}
+.mcq-opt.selected{border-color:#AFA9EC;background:var(--pl);color:var(--pd);}
+.mcq-opt.correct{border-color:var(--gm);background:var(--gl);color:var(--gd);}
+.mcq-opt.wrong{border-color:var(--rm);background:var(--rl);color:var(--r);}
+.opt-letter{width:22px;height:22px;border-radius:50%;border:0.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;font-family:var(--fm);}
+.mcq-explain{margin-top:10px;padding:10px 13px;background:var(--bl);border:0.5px solid #85B7EB;border-radius:var(--radius);font-size:12px;color:var(--b);line-height:1.55;display:none;}
+.mcq-explain.on{display:block;}
+.score-banner{text-align:center;padding:20px;background:var(--bg2);border-radius:var(--radius-lg);margin-bottom:14px;border:0.5px solid var(--border);}
+.score-big{font-size:38px;font-weight:700;font-family:var(--fm);color:var(--text);}
+
+/* ===== PROGRESS ===== */
+.progress-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.badge-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.bdg{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--bg2);min-width:76px;cursor:pointer;transition:all 0.15s;}
+.bdg:hover{border-color:var(--border2);}
+.bdg.locked{opacity:0.38;}
+.bdg-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.bdg-name{font-size:11px;color:var(--text2);text-align:center;}
+.bdg.earned .bdg-name{color:var(--text);font-weight:500;}
+
+/* ===== SAVED SNIPPETS ===== */
+.snippet-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.15s;}
+.snippet-card:hover{border-color:var(--border2);}
+.snippet-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.snippet-preview{font-family:var(--fm);font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.snippet-meta{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.snippet-date{font-size:11px;color:var(--text3);}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ===== MOBILE ===== */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .dash-2col,.dash-3col,.progress-layout,.game-layout{grid-template-columns:1fr;}
+  .editor-panel-right{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-wrap">
+    <div class="auth-hero">
+      <div class="auth-hero-icon">❯_</div>
+      <h1>DebugQuest</h1>
+      <p>AI-powered debugging platform for CS students</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="authTab('login')">Sign in</div>
+        <div class="auth-tab" onclick="authTab('signup')">Sign up</div>
+      </div>
+      <div id="auth-error" class="auth-error"></div>
+      <div id="auth-login">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="login-email" placeholder="you@example.com"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="login-pass" placeholder="••••••••"></div>
+        <button class="btn-full" onclick="doLogin()">Sign in</button>
+        <div class="divider">or continue with</div>
+        <div class="social-btns">
+          <button class="btn-social" onclick="socialLogin('Google')"><div class="si" style="background:#EA4335;color:#fff;">G</div>Continue with Google</button>
+          <button class="btn-social" onclick="socialLogin('GitHub')"><div class="si" style="background:#24292e;color:#fff;font-size:9px;">gh</div>Continue with GitHub</button>
+        </div>
+      </div>
+      <div id="auth-signup" style="display:none;">
+        <div class="form-group"><label class="form-label">Full name</label><input class="form-input" type="text" id="su-name" placeholder="Your name"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="su-email" placeholder="you@example.com"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="su-pass" placeholder="At least 6 characters"></div>
+        <button class="btn-full" onclick="doSignup()">Create account</button>
+        <div class="divider">or continue with</div>
+        <div class="social-btns">
+          <button class="btn-social" onclick="socialLogin('Google')"><div class="si" style="background:#EA4335;color:#fff;">G</div>Continue with Google</button>
+          <button class="btn-social" onclick="socialLogin('GitHub')"><div class="si" style="background:#24292e;color:#fff;font-size:9px;">gh</div>Continue with GitHub</button>
+        </div>
+      </div>
+    </div>
+    <p class="demo-note">Demo mode — enter any email + password to continue</p>
+  </div>
+</div>
+
+<!-- FULL SCREEN APP -->
+<div id="app-shell" style="display:none;">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">❯_</div>
+      <div class="sb-logo-text">Debug<span>Quest</span></div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section">Main</div>
+      <div class="sb-item active" onclick="goPanel('dashboard',this)"><div class="sb-icon">🏠</div><div class="sb-label">Dashboard</div></div>
+      <div class="sb-item" onclick="goPanel('editor',this)"><div class="sb-icon">💻</div><div class="sb-label">Code Editor</div></div>
+      <div class="sb-item" onclick="goPanel('analyzer',this)"><div class="sb-icon">🔍</div><div class="sb-label">AI Analyzer</div></div>
+      <div class="sb-item" onclick="goPanel('chatbot',this)"><div class="sb-icon">🤖</div><div class="sb-label">Debug AI Chat</div><div class="sb-badge">AI</div></div>
+      <div class="sb-section">Learn</div>
+      <div class="sb-item" onclick="goPanel('game',this)"><div class="sb-icon">🐛</div><div class="sb-label">Challenges</div></div>
+      <div class="sb-item" onclick="goPanel('mcq',this)"><div class="sb-icon">📝</div><div class="sb-label">MCQ Quiz</div></div>
+      <div class="sb-item" onclick="goPanel('practice',this)"><div class="sb-icon">🧪</div><div class="sb-label">Practice Lab</div></div>
+      <div class="sb-section">Account</div>
+      <div class="sb-item" onclick="goPanel('progress',this)"><div class="sb-icon">📊</div><div class="sb-label">Progress</div></div>
+      <div class="sb-item" onclick="goPanel('saved',this)"><div class="sb-icon">💾</div><div class="sb-label">Saved Code</div></div>
+      <div class="sb-item" onclick="goPanel('settings',this)"><div class="sb-icon">⚙️</div><div class="sb-label">Settings</div></div>
+    </div>
+    <div class="sb-bottom">
+      <div class="sb-item" onclick="showShareModal()"><div class="sb-icon">🔗</div><div class="sb-label">Share Code</div></div>
+      <div class="sb-user" onclick="logout()">
+        <div class="sb-avatar" id="sb-av">ST</div>
+        <div class="sb-user-info"><div class="sb-user-name" id="sb-name">Student</div><div class="sb-user-role" id="sb-role">Level 3 · 340 XP</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-stats">
+        <div class="tstat">Lv <b id="hdr-lv">3</b></div>
+        <div class="tstat"><b id="hdr-xp">340</b> XP <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar" style="width:68%"></div></div></div>
+        <div class="tstat">🔥 <b id="hdr-streak">3</b></div>
+      </div>
+      <div class="topbar-btns">
+        <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+        <button class="icon-btn" title="Notifications">🔔</button>
+        <div class="sb-avatar" style="cursor:pointer;" onclick="logout()" id="top-av">ST</div>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD PANEL ===== -->
+    <div class="panel active" id="panel-dashboard">
+      <div style="margin-bottom:20px;">
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Good morning, <span id="dash-name">Student</span> 👋</div>
+        <div style="font-size:13px;color:var(--text2);">You're on a 3-day streak — keep it up!</div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-card"><div class="dash-card-icon">🐛</div><div class="dash-num" id="d-bugs">12</div><div class="dash-lbl">Bugs Fixed</div><div class="dash-delta delta-up">↑ 4 this week</div></div>
+        <div class="dash-card"><div class="dash-card-icon">📝</div><div class="dash-num" id="d-mcq">8</div><div class="dash-lbl">MCQs Correct</div><div class="dash-delta delta-up">↑ 2 today</div></div>
+        <div class="dash-card"><div class="dash-card-icon">⭐</div><div class="dash-num" id="d-xp">340</div><div class="dash-lbl">Total XP</div><div class="dash-delta delta-up">↑ 50 today</div></div>
+        <div class="dash-card"><div class="dash-card-icon">🔥</div><div class="dash-num" id="d-streak">3</div><div class="dash-lbl">Day Streak</div><div class="dash-delta delta-up">Best: 7 days</div></div>
+        <div class="dash-card"><div class="dash-card-icon">⏱️</div><div class="dash-num">4.2s</div><div class="dash-lbl">Avg Fix Time</div><div class="dash-delta delta-dn">↑ 0.5s slower</div></div>
+        <div class="dash-card"><div class="dash-card-icon">🏆</div><div class="dash-num">#3</div><div class="dash-lbl">Leaderboard</div><div class="dash-delta">Top 15%</div></div>
+      </div>
+      <div class="dash-3col">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="section-lbl">Skill Progress</div>
+            <div class="skill-row"><span class="skill-name">Python</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:75%;background:var(--g);"></div></div></div><span class="skill-pct">75%</span></div>
+            <div class="skill-row"><span class="skill-name">JavaScript</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:52%;background:var(--b);"></div></div></div><span class="skill-pct">52%</span></div>
+            <div class="skill-row"><span class="skill-name">DSA</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:38%;background:var(--p);"></div></div></div><span class="skill-pct">38%</span></div>
+            <div class="skill-row"><span class="skill-name">OOP</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:60%;background:var(--a);"></div></div></div><span class="skill-pct">60%</span></div>
+            <div class="skill-row"><span class="skill-name">C++</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:22%;background:var(--r);"></div></div></div><span class="skill-pct">22%</span></div>
+          </div>
+          <div class="card">
+            <div class="section-lbl">Quick Actions</div>
+            <div class="btn-row" style="margin-top:0;">
+              <button class="btn btn-primary btn-sm" onclick="goPanel('editor',null)">💻 Open Editor</button>
+              <button class="btn btn-sm" onclick="goPanel('game',null)">🐛 New Challenge</button>
+              <button class="btn btn-sm" onclick="goPanel('chatbot',null)">🤖 Ask AI</button>
+              <button class="btn btn-sm" onclick="goPanel('analyzer',null)">🔍 Analyze Code</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="section-lbl">Recent Activity</div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--g);"></div><div class="activity-text">Fixed off-by-one loop error (+20 XP)</div><div class="activity-time">2h ago</div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--b);"></div><div class="activity-text">Completed Python MCQ (6/7)</div><div class="activity-time">3h ago</div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--p);"></div><div class="activity-text">Analyzed factorial function</div><div class="activity-time">Yesterday</div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--a);"></div><div class="activity-text">Saved bubble sort snippet</div><div class="activity-time">Yesterday</div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--g);"></div><div class="activity-text">Reached Level 3 🎉</div><div class="activity-time">2d ago</div></div>
+          </div>
+          <div class="card">
+            <div class="section-lbl">Leaderboard</div>
+            <div class="leaderboard-row"><span class="lb-rank">1</span><div class="lb-av" style="background:var(--pl);color:var(--pd);">SA</div><span class="lb-nm">Sara A.</span><span class="lb-pts">820 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">2</span><div class="lb-av" style="background:var(--gl);color:var(--gd);">JM</div><span class="lb-nm">João M.</span><span class="lb-pts">605 XP</span></div>
+            <div class="leaderboard-row lb-row-me"><span class="lb-rank">3</span><div class="lb-av" style="background:var(--gm);color:var(--gd);" id="dash-lb-av">ST</div><span class="lb-nm" id="dash-lb-name" style="font-weight:600;color:var(--gd);">You</span><span class="lb-pts" id="dash-lb-xp">340 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">4</span><div class="lb-av" style="background:var(--al);color:var(--ad);">RK</div><span class="lb-nm">Riya K.</span><span class="lb-pts">290 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">5</span><div class="lb-av" style="background:var(--rl);color:var(--r);">TL</div><span class="lb-nm">Tim L.</span><span class="lb-pts">155 XP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EDITOR PANEL ===== -->
+    <div class="panel-split" id="panel-editor">
+      <div class="editor-panel-left">
+        <div class="editor-toolbar">
+          <span class="editor-lang-badge" id="ed-lang-badge">Python</span>
+          <div class="pill-row" style="margin:0;gap:6px;">
+            <button class="pill active" onclick="setEditorLang('Python',this)">Python</button>
+            <button class="pill" onclick="setEditorLang('JavaScript',this)">JS</button>
+            <button class="pill" onclick="setEditorLang('Java',this)">Java</button>
+            <button class="pill" onclick="setEditorLang('C++',this)">C++</button>
+          </div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-sm" onclick="saveSnippet()">💾 Save</button>
+          <button class="btn btn-sm" onclick="shareCode()">🔗 Share</button>
+          <button class="btn btn-sm btn-primary" onclick="analyzeEditorCode()">🔍 Analyze</button>
+        </div>
+        <div class="editor-area" style="position:relative;">
+          <div class="line-numbers" id="line-nums">1</div>
+          <textarea class="code-textarea" id="editor-code" spellcheck="false" oninput="updateLineNumbers()" placeholder="# Write or paste your code here...
+# Click Analyze to detect bugs, get suggestions, and complexity analysis
+
+def example():
+    pass"># Write or paste your code here...
+
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n)
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr</textarea>
+        </div>
+        <div class="editor-status">
+          <span class="es-item">Ln <b id="ed-ln">1</b>, Col <b id="ed-col">1</b></span>
+          <span class="es-item" id="ed-lang-status">Python</span>
+          <span class="es-item" id="ed-char-count">0 chars</span>
+          <span class="es-item" id="ed-issues-count" style="color:var(--r);display:none;">⚠ Issues found</span>
+        </div>
+      </div>
+      <div class="editor-panel-right">
+        <div class="ai-panel-hdr">
+          <div class="ai-panel-hdr-title">🤖 AI Analysis</div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-sm btn-primary" onclick="analyzeEditorCode()" style="margin-left:8px;">Run</button>
+        </div>
+        <div class="ai-panel" id="editor-analysis">
+          <div style="text-align:center;padding:40px 20px;color:var(--text3);">
+            <div style="font-size:32px;margin-bottom:12px;">🔍</div>
+            <div style="font-size:13px;">Click <b style="color:var(--text);">Analyze</b> to detect bugs, get AI suggestions, complexity analysis, and code quality score.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ANALYZER PANEL ===== -->
+    <div class="panel" id="panel-analyzer">
+      <div style="max-width:780px;">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">🔍 AI Code Analyzer</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Paste any code for AI-powered bug detection, syntax analysis, complexity breakdown, and optimization tips.</div>
+        <div class="pill-row">
+          <button class="pill active" onclick="setAnaLang('Python',this)">Python</button>
+          <button class="pill" onclick="setAnaLang('JavaScript',this)">JavaScript</button>
+          <button class="pill" onclick="setAnaLang('Java',this)">Java</button>
+          <button class="pill" onclick="setAnaLang('C++',this)">C++</button>
+        </div>
+        <textarea class="code-ed" id="an-input" placeholder="# Paste your code here..." spellcheck="false" style="min-height:200px;margin-bottom:12px;"></textarea>
+        <div class="btn-row" style="margin-top:0;">
+          <button class="btn btn-primary" onclick="analyzeCode()">🔍 Analyze Code</button>
+          <button class="btn" onclick="document.getElementById('an-input').value='';document.getElementById('an-result').innerHTML=''">Clear</button>
+        </div>
+        <div id="an-result" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ===== CHATBOT PANEL ===== -->
+    <div class="panel-split" id="panel-chatbot">
+      <div class="chat-wrap" style="flex:1;">
+        <div class="chat-suggestions" id="chat-suggestions">
+          <div class="chat-sug" onclick="chatSuggest(this)">What is a null pointer error?</div>
+          <div class="chat-sug" onclick="chatSuggest(this)">Explain recursion simply</div>
+          <div class="chat-sug" onclick="chatSuggest(this)">How does garbage collection work?</div>
+          <div class="chat-sug" onclick="chatSuggest(this)">Why is my loop infinite?</div>
+          <div class="chat-sug" onclick="chatSuggest(this)">Time complexity of binary search?</div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg ai">
+            <div class="msg-bubble">👋 Hi! I'm your AI debugging assistant. Ask me anything about code, bugs, algorithms, or CS concepts. I can explain errors in simple language and help you fix them!</div>
+            <div class="msg-time">just now</div>
+          </div>
+        </div>
+        <div class="chat-input-wrap">
+          <textarea class="chat-input" id="chat-input" placeholder="Ask me anything about debugging..." rows="1" onkeydown="chatKeydown(event)"></textarea>
+          <button class="chat-send" onclick="sendChat()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== GAME PANEL ===== -->
+    <div class="panel-split" id="panel-game">
+      <div class="game-layout" style="flex:1;">
+        <div class="game-main">
+          <div class="prog-row" id="prog-row"></div>
+          <div class="ch-header">
+            <div>
+              <span class="badge" id="bug-badge">Syntax Error</span>
+              <div class="ch-title" id="ch-title" style="margin-top:6px;">Fix the broken function</div>
+            </div>
+            <span class="badge" id="diff-badge">Easy</span>
+          </div>
+          <div class="ch-desc" id="ch-desc"></div>
+          <div class="code-lbl">Buggy code — find and fix the bug</div>
+          <textarea class="code-ed" id="code-in" spellcheck="false"></textarea>
+          <div class="hint" id="hint-box"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="checkSol()">▶ Run & Check</button>
+            <button class="btn" onclick="toggleHint()">💡 Hint</button>
+            <button class="btn" onclick="giveUp()">👁 Reveal Answer</button>
+          </div>
+          <div class="fb" id="game-fb"></div>
+          <div class="nxt" id="nxt">
+            <button class="btn btn-primary" onclick="nextCh()">Next Challenge →</button>
+          </div>
+        </div>
+        <div class="game-side">
+          <div class="challenge-meta">
+            <div class="meta-card">
+              <div class="meta-title">Challenge Info</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+                <div style="margin-bottom:5px;"><b style="color:var(--text);">Challenge:</b> <span id="g-ch-num">1</span> / <span id="g-ch-total">8</span></div>
+                <div style="margin-bottom:5px;"><b style="color:var(--text);">Type:</b> <span id="g-type">Syntax</span></div>
+                <div style="margin-bottom:5px;"><b style="color:var(--text);">Difficulty:</b> <span id="g-diff">Easy</span></div>
+                <div><b style="color:var(--text);">XP Reward:</b> <span style="color:var(--g);">+20 XP (without hint)</span></div>
+              </div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-title">Leaderboard</div>
+              <div class="leaderboard-row"><span class="lb-rank">1</span><div class="lb-av" style="background:var(--pl);color:var(--pd);">SA</div><span class="lb-nm">Sara A.</span><span class="lb-pts">820</span></div>
+              <div class="leaderboard-row"><span class="lb-rank">2</span><div class="lb-av" style="background:var(--gl);color:var(--gd);">JM</div><span class="lb-nm">João M.</span><span class="lb-pts">605</span></div>
+              <div class="leaderboard-row lb-row-me"><span class="lb-rank">3</span><div class="lb-av" style="background:var(--gm);color:var(--gd);" id="g-lb-av">ST</div><span class="lb-nm" id="g-lb-name" style="color:var(--gd);">You</span><span class="lb-pts" id="g-lb-xp">340</span></div>
+              <div class="leaderboard-row"><span class="lb-rank">4</span><div class="lb-av" style="background:var(--al);color:var(--ad);">RK</div><span class="lb-nm">Riya K.</span><span class="lb-pts">290</span></div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-title">Badges Earned</div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                <div class="bdg earned"><div class="bdg-icon" style="background:var(--gl);color:var(--g);">B</div><div class="bdg-name">First fix</div></div>
+                <div class="bdg earned"><div class="bdg-icon" style="background:var(--al);color:var(--a);">5</div><div class="bdg-name">5 in a row</div></div>
+                <div class="bdg earned"><div class="bdg-icon" style="background:var(--pl);color:var(--p);">S</div><div class="bdg-name">Syntax pro</div></div>
+                <div class="bdg locked"><div class="bdg-icon" style="background:var(--bg3);">?</div><div class="bdg-name">Logic king</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MCQ PANEL ===== -->
+    <div class="panel" id="panel-mcq">
+      <div style="max-width:680px;">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">📝 MCQ Quiz</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">Test your knowledge with topic-based multiple choice questions.</div>
+        <div class="pill-row" id="topic-row"></div>
+        <div id="mcq-container"></div>
+        <div class="btn-row" id="mcq-btn-row">
+          <button class="btn btn-primary" id="mcq-submit" onclick="submitMCQ()">Submit Answers</button>
+          <button class="btn" onclick="resetMCQ()">Reset Quiz</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRACTICE LAB PANEL ===== -->
+    <div class="panel" id="panel-practice">
+      <div style="max-width:680px;">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">🧪 Practice Lab</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:18px;">Solve practice problems with AI-generated hints and detailed solutions.</div>
+        <div id="practice-problems"></div>
+      </div>
+    </div>
+
+    <!-- ===== PROGRESS PANEL ===== -->
+    <div class="panel" id="panel-progress">
+      <div style="font-size:16px;font-weight:600;margin-bottom:16px;">📊 Your Progress</div>
+      <div class="progress-layout" style="gap:16px;max-width:900px;">
+        <div>
+          <div class="dash-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="dash-card"><div class="dash-num" id="p-bugs">12</div><div class="dash-lbl">Bugs Fixed</div></div>
+            <div class="dash-card"><div class="dash-num" id="p-mcq">8</div><div class="dash-lbl">MCQs Correct</div></div>
+            <div class="dash-card"><div class="dash-num" id="p-streak">3</div><div class="dash-lbl">Day Streak</div></div>
+            <div class="dash-card"><div class="dash-num" id="p-xp2">340</div><div class="dash-lbl">Total XP</div></div>
+          </div>
+          <div class="card">
+            <div class="section-lbl">Badges</div>
+            <div class="badge-grid">
+              <div class="bdg earned"><div class="bdg-icon" style="background:var(--gl);color:var(--g);">B</div><div class="bdg-name">First fix</div></div>
+              <div class="bdg earned"><div class="bdg-icon" style="background:var(--al);color:var(--a);">5</div><div class="bdg-name">5 in a row</div></div>
+              <div class="bdg earned"><div class="bdg-icon" style="background:var(--pl);color:var(--p);">S</div><div class="bdg-name">Syntax pro</div></div>
+              <div class="bdg earned"><div class="bdg-icon" style="background:var(--bl);color:var(--b);">Q</div><div class="bdg-name">Quiz starter</div></div>
+              <div class="bdg locked"><div class="bdg-icon" style="background:var(--bg3);">?</div><div class="bdg-name">Logic king</div></div>
+              <div class="bdg locked"><div class="bdg-icon" style="background:var(--bg3);">?</div><div class="bdg-name">10 streak</div></div>
+              <div class="bdg locked"><div class="bdg-icon" style="background:var(--bg3);">?</div><div class="bdg-name">Speed demon</div></div>
+              <div class="bdg locked"><div class="bdg-icon" style="background:var(--bg3);">?</div><div class="bdg-name">All topics</div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="section-lbl">Skill Breakdown</div>
+            <div class="skill-row"><span class="skill-name">Python</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:75%;background:var(--g);"></div></div></div><span class="skill-pct">75%</span></div>
+            <div class="skill-row"><span class="skill-name">JavaScript</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:52%;background:var(--b);"></div></div></div><span class="skill-pct">52%</span></div>
+            <div class="skill-row"><span class="skill-name">DSA</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:38%;background:var(--p);"></div></div></div><span class="skill-pct">38%</span></div>
+            <div class="skill-row"><span class="skill-name">OOP</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:60%;background:var(--a);"></div></div></div><span class="skill-pct">60%</span></div>
+            <div class="skill-row"><span class="skill-name">C++</span><div style="flex:1;"><div class="progress-bar-wrap"><div class="progress-bar" style="width:22%;background:var(--r);"></div></div></div><span class="skill-pct">22%</span></div>
+          </div>
+          <div class="card">
+            <div class="section-lbl">Global Leaderboard</div>
+            <div class="leaderboard-row"><span class="lb-rank">1</span><div class="lb-av" style="background:var(--pl);color:var(--pd);">SA</div><span class="lb-nm">Sara A.</span><span class="lb-pts">820 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">2</span><div class="lb-av" style="background:var(--gl);color:var(--gd);">JM</div><span class="lb-nm">João M.</span><span class="lb-pts">605 XP</span></div>
+            <div class="leaderboard-row lb-row-me"><span class="lb-rank">3</span><div class="lb-av" style="background:var(--gm);color:var(--gd);" id="lb-av-me">ST</div><span class="lb-nm" id="lb-name-me" style="color:var(--gd);font-weight:600;">You</span><span class="lb-pts" id="lb-xp-me">340 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">4</span><div class="lb-av" style="background:var(--al);color:var(--ad);">RK</div><span class="lb-nm">Riya K.</span><span class="lb-pts">290 XP</span></div>
+            <div class="leaderboard-row"><span class="lb-rank">5</span><div class="lb-av" style="background:var(--rl);color:var(--r);">TL</div><span class="lb-nm">Tim L.</span><span class="lb-pts">155 XP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SAVED CODE PANEL ===== -->
+    <div class="panel" id="panel-saved">
+      <div style="max-width:680px;">
+        <div style="display:flex;align-items:center;margin-bottom:18px;">
+          <div><div style="font-size:16px;font-weight:600;margin-bottom:3px;">💾 Saved Code</div><div style="font-size:13px;color:var(--text2);">Your saved snippets and past analyses.</div></div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-primary btn-sm" onclick="goPanel('editor',null)">+ New Snippet</button>
+        </div>
+        <div id="saved-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS PANEL ===== -->
+    <div class="panel" id="panel-settings">
+      <div style="max-width:560px;">
+        <div style="font-size:16px;font-weight:600;margin-bottom:18px;">⚙️ Settings</div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="section-lbl">Appearance</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div><div style="font-size:13px;font-weight:500;">Dark Mode</div><div style="font-size:12px;color:var(--text2);">Toggle between dark and light theme</div></div>
+            <button class="btn btn-sm" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Dark</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div><div style="font-size:13px;font-weight:500;">Editor Font Size</div><div style="font-size:12px;color:var(--text2);">Adjust the code editor font size</div></div>
+            <select style="padding:6px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--ff);font-size:12px;" onchange="setFontSize(this.value)">
+              <option value="11">11px</option><option value="12">12px</option><option value="13" selected>13px</option><option value="14">14px</option><option value="16">16px</option>
+            </select>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="section-lbl">Account</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div class="sb-avatar" id="settings-av" style="width:44px;height:44px;font-size:16px;">ST</div>
+            <div><div style="font-size:14px;font-weight:600;" id="settings-name">Student</div><div style="font-size:12px;color:var(--text2);">Free Plan · Level 3</div></div>
+          </div>
+          <button class="btn btn-sm" style="color:var(--r);border-color:var(--r);" onclick="logout()">Sign out</button>
+        </div>
+        <div class="card">
+          <div class="section-lbl">Integrations</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div><div style="font-size:13px;font-weight:500;">GitHub Integration</div><div style="font-size:12px;color:var(--text2);">Sync your repos and analyze code</div></div>
+            <button class="btn btn-sm">Connect GitHub</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div><div style="font-size:13px;font-weight:500;">VS Code Extension</div><div style="font-size:12px;color:var(--text2);">Debug directly in your editor</div></div>
+            <button class="btn btn-sm">Install Extension</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const challenges=[{title:"Fix the broken function",desc:"This Python function should return the sum of a list, but it crashes immediately. Find the syntax error.",type:"Syntax",typeClass:"badge-red",diff:"Easy",diffStyle:"background:var(--gl);color:var(--gd);",buggy:"def sum_list(numbers)\n    total = 0\n    for n in numbers:\n        total += n\n    return total",fix:"def sum_list(numbers):\n    total = 0\n    for n in numbers:\n        total += n\n    return total",hint:"Every Python function definition requires a specific punctuation mark at the end of the header line.",explain:"Missing colon (:) after def sum_list(numbers). Python requires a colon at the end of every function, if, for, while, and class header."},{title:"Off-by-one loop error",desc:"This function should print numbers 1 through 10 inclusive, but the number 10 never prints.",type:"Logic",typeClass:"badge-amber",diff:"Easy",diffStyle:"background:var(--gl);color:var(--gd);",buggy:"def print_numbers():\n    for i in range(1, 10):\n        print(i)",fix:"def print_numbers():\n    for i in range(1, 11):\n        print(i)",hint:"Python's range(start, stop) is exclusive of the stop value.",explain:"range(1, 10) generates numbers 1–9 only. To include 10, use range(1, 11). This is the classic off-by-one error."},{title:"Variable used before assignment",desc:"This JavaScript function crashes at runtime on line 2 with a ReferenceError.",type:"Runtime",typeClass:"badge-blue",diff:"Medium",diffStyle:"background:var(--al);color:var(--ad);",buggy:"function greet(name) {\n  console.log('Hello ' + greeting);\n  const greeting = 'Hi, ' + name;\n}",fix:"function greet(name) {\n  const greeting = 'Hi, ' + name;\n  console.log('Hello ' + greeting);\n}",hint:"JavaScript's const and let are not hoisted with a value.",explain:"greeting is used on line 2 but declared on line 3. Move the const declaration above the console.log to fix the Temporal Dead Zone error."},{title:"Infinite while loop",desc:"This countdown function never finishes — it runs forever. Find the missing statement.",type:"Logic",typeClass:"badge-amber",diff:"Medium",diffStyle:"background:var(--al);color:var(--ad);",buggy:"def countdown(n):\n    while n > 0:\n        print(n)\n    return 'Done!'",fix:"def countdown(n):\n    while n > 0:\n        print(n)\n        n -= 1\n    return 'Done!'",hint:"The loop checks n > 0 on every iteration, but does anything inside the loop actually change n?",explain:"Without n -= 1 inside the loop, n never decreases so the condition n > 0 stays True forever."},{title:"Missing recursive base case",desc:"This Python factorial function causes a RecursionError. What critical part is missing?",type:"Runtime",typeClass:"badge-blue",diff:"Hard",diffStyle:"background:var(--rl);color:var(--r);",buggy:"def factorial(n):\n    return n * factorial(n - 1)",fix:"def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)",hint:"Every recursive function needs a base case — a condition that stops it from calling itself infinitely.",explain:"Without if n <= 1: return 1, the function calls itself forever. The base case stops the recursion."},{title:"Wrong comparison operator",desc:"This function should check if a number is even, but it always returns False.",type:"Logic",typeClass:"badge-amber",diff:"Easy",diffStyle:"background:var(--gl);color:var(--gd);",buggy:"def is_even(n):\n    if n % 2 = 0:\n        return True\n    return False",fix:"def is_even(n):\n    if n % 2 == 0:\n        return True\n    return False",hint:"In Python, = is for assignment. A different operator is used to check equality inside conditions.",explain:"Using = instead of == inside an if statement causes a SyntaxError. Use == for comparison."},{title:"List index out of range",desc:"This function tries to return the last element of a list, but crashes with an IndexError.",type:"Runtime",typeClass:"badge-blue",diff:"Medium",diffStyle:"background:var(--al);color:var(--ad);",buggy:"def last_element(items):\n    return items[len(items)]",fix:"def last_element(items):\n    return items[len(items) - 1]",fix2:"def last_element(items):\n    return items[-1]",hint:"Python list indices start at 0. If a list has 5 elements, the valid indices are 0 through 4.",explain:"items[len(items)] is always out of bounds. Use items[len(items) - 1] or simply items[-1]."},{title:"String concatenation type error",desc:"This JavaScript function should display a user's age, but produces '25' as a string instead of adding numbers.",type:"Runtime",typeClass:"badge-blue",diff:"Easy",diffStyle:"background:var(--gl);color:var(--gd);",buggy:'function showAge(name, age) {\n  return name + " is " + age + " years old";\n}\nshowAge("Ali", "25");',fix:'function showAge(name, age) {\n  return name + " is " + age + " years old";\n}\nshowAge("Ali", 25);',hint:"Check the data type of the age argument being passed. Numbers and strings are different types.",explain:'Passing "25" (string) instead of 25 (number) causes string concatenation. Always pass numbers as numbers.'}];
+
+const mcqBank={Python:[{q:"What is the output of print(type([]))?",opts:["<class 'list'>","<class 'array'>","list","[]"],ans:0,explain:"[] creates a Python list. type([]) returns <class 'list'>."},{q:"Which keyword is used to define a function in Python?",opts:["function","fun","def","lambda"],ans:2,explain:"def is the keyword for defining named functions in Python."},{q:"What does len('hello') return?",opts:["4","5","6","Error"],ans:1,explain:"'hello' has exactly 5 characters, so len() returns 5."},{q:"Which of these is a mutable data type in Python?",opts:["tuple","string","int","list"],ans:3,explain:"Lists are mutable. Tuples, strings, and ints are immutable."},{q:"What does the // operator do in Python?",opts:["Division","Integer (floor) division","Modulus","Exponent"],ans:1,explain:"// performs floor division — it divides and rounds down. 7 // 2 = 3."},{q:"How do you create an empty dictionary in Python?",opts:["{}","[]","()","dict[]"],ans:0,explain:"{} creates an empty dictionary. [] is a list, () is a tuple."},{q:"What is the correct way to add a comment in Python?",opts:["// comment","/* comment */","# comment","-- comment"],ans:2,explain:"Python uses # for single-line comments."}],JavaScript:[{q:"Which keyword declares a block-scoped variable in JavaScript?",opts:["var","let","both var and let","neither"],ans:1,explain:"let is block-scoped. var is function-scoped and can cause bugs."},{q:"What does === check in JavaScript?",opts:["Value only","Type only","Value and type","Reference equality"],ans:2,explain:"=== is strict equality — it checks both value AND type. 1 === '1' is false."},{q:"What is the output of typeof null in JavaScript?",opts:["null","undefined","object","boolean"],ans:2,explain:"typeof null returns 'object' — this is a historical bug in JavaScript."},{q:"Which array method returns a new transformed array?",opts:["filter()","forEach()","map()","reduce()"],ans:2,explain:"map() applies a function to each element and returns a NEW array."},{q:"What does the spread operator (...) do in JavaScript?",opts:["Declares rest parameters only","Spreads iterables into elements","Both rest params and spread","Creates a copy of a function"],ans:2,explain:"... works for both: spreading arrays/objects and collecting function arguments."},{q:"What is a closure in JavaScript?",opts:["A function inside an object","A function that remembers its outer scope","An immediately invoked function","A function with no return value"],ans:1,explain:"A closure retains access to variables from its outer scope even after that scope has finished."},{q:"Which method converts a JSON string to a JavaScript object?",opts:["JSON.parse()","JSON.stringify()","JSON.convert()","JSON.decode()"],ans:0,explain:"JSON.parse() converts a JSON string into a JS object."}],DSA:[{q:"What is the time complexity of binary search?",opts:["O(n)","O(log n)","O(n²)","O(1)"],ans:1,explain:"Binary search halves the search space each step, giving O(log n) time."},{q:"Which data structure uses LIFO order?",opts:["Queue","Stack","Linked list","Heap"],ans:1,explain:"A Stack uses LIFO — last element added is the first one removed."},{q:"What is the worst-case time complexity of Bubble Sort?",opts:["O(n log n)","O(n)","O(n²)","O(log n)"],ans:2,explain:"Bubble Sort compares every adjacent pair in every pass — O(n²) worst case."},{q:"Which tree traversal visits: Left → Root → Right?",opts:["Pre-order","In-order","Post-order","Level-order"],ans:1,explain:"In-order traversal visits Left, then Root, then Right. On a BST, this gives sorted output."},{q:"What does a hash table use to map keys to values?",opts:["Sorting algorithm","A hash function","Binary search","Recursion"],ans:1,explain:"A hash function converts a key into an array index, enabling O(1) average lookup."},{q:"What is the main advantage of a linked list over an array?",opts:["Faster access by index","Dynamic size and efficient insertion","Less memory usage","Better cache performance"],ans:1,explain:"Linked lists can grow dynamically and allow O(1) insertion at the front."},{q:"Which sorting algorithm has the best average-case time complexity?",opts:["Bubble Sort","Selection Sort","Merge Sort","Insertion Sort"],ans:2,explain:"Merge Sort runs in O(n log n) in all cases — one of the most efficient comparison-based sorts."}],OOP:[{q:"What is encapsulation in OOP?",opts:["Inheriting from a parent class","Bundling data and methods into one unit","Overriding methods in subclasses","Creating multiple objects from one class"],ans:1,explain:"Encapsulation bundles data and methods into one unit (a class), hiding internal details."},{q:"Which OOP principle allows a child class to inherit from a parent class?",opts:["Polymorphism","Abstraction","Inheritance","Encapsulation"],ans:2,explain:"Inheritance lets a subclass acquire attributes and methods from a superclass."},{q:"What is method overriding?",opts:["Two methods with the same name in one class","A child class redefines a method from its parent","Calling a method more than once","Adding extra parameters to a method"],ans:1,explain:"Method overriding lets a subclass provide its own implementation of a parent method."},{q:"In Python, which special method acts as the constructor?",opts:["__start__","__init__","__new__","__create__"],ans:1,explain:"__init__ is called automatically when a new object is created."},{q:"What is polymorphism?",opts:["One class producing many objects","Same interface, different behaviour per class","Hiding internal data from outside","A class inheriting from itself"],ans:1,explain:"Polymorphism means objects of different types respond differently through the same interface."},{q:"What is an abstract class?",opts:["A class with no attributes","A class that cannot be instantiated directly","A class with only static methods","A class that inherits from multiple parents"],ans:1,explain:"An abstract class defines a blueprint. You cannot create an object from it directly."},{q:"What does 'self' refer to in a Python class method?",opts:["The class itself","The parent class","The current instance of the class","A global variable"],ans:2,explain:"self refers to the specific object (instance) on which the method is being called."}]};
+
+const practiceProblems=[{title:"Reverse a String",difficulty:"Easy",lang:"Python",desc:"Write a function that reverses a string without using built-in reverse methods.",starter:"def reverse_string(s):\n    # Your code here\n    pass",solution:"def reverse_string(s):\n    result = ''\n    for char in s:\n        result = char + result\n    return result",hint:"Try building the result string by prepending each character."},{title:"Find the Maximum",difficulty:"Easy",lang:"Python",desc:"Write a function that finds the maximum number in a list without using max().",starter:"def find_max(numbers):\n    # Your code here\n    pass",solution:"def find_max(numbers):\n    if not numbers:\n        return None\n    maximum = numbers[0]\n    for n in numbers[1:]:\n        if n > maximum:\n            maximum = n\n    return maximum",hint:"Start with the first element as your candidate maximum."},{title:"Count Vowels",difficulty:"Easy",lang:"Python",desc:"Count the number of vowels (a, e, i, o, u) in a given string.",starter:"def count_vowels(s):\n    # Your code here\n    pass",solution:"def count_vowels(s):\n    vowels = 'aeiouAEIOU'\n    count = 0\n    for char in s:\n        if char in vowels:\n            count += 1\n    return count",hint:"Create a string of vowels and check if each character is in it."},{title:"Fibonacci Sequence",difficulty:"Medium",lang:"Python",desc:"Return the first n numbers of the Fibonacci sequence as a list.",starter:"def fibonacci(n):\n    # Your code here\n    pass",solution:"def fibonacci(n):\n    if n <= 0:\n        return []\n    if n == 1:\n        return [0]\n    seq = [0, 1]\n    for _ in range(2, n):\n        seq.append(seq[-1] + seq[-2])\n    return seq",hint:"Start with [0, 1] and keep appending the sum of the last two numbers."},{title:"Check Palindrome",difficulty:"Medium",lang:"Python",desc:"Check whether a given string is a palindrome (reads the same forwards and backwards).",starter:"def is_palindrome(s):\n    # Your code here\n    pass",solution:"def is_palindrome(s):\n    s = s.lower().replace(' ', '')\n    return s == s[::-1]",hint:"Compare the string with its reverse. Remember to normalize case."}];
+
+// ===== STATE =====
+let xp=340,solvedBugs=12,mcqCorrect=8,streak=3,currentCh=0,hintOn=false,revealed=false;
+let currentUser={name:'Student',initials:'ST'};
+let editorLang='Python',anaLang='Python',currentTopic='Python';
+let mcqAnswers={},mcqSubmitted=false;
+let savedSnippets=[{title:'Bubble Sort',lang:'Python',code:'def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n    return arr',date:'Apr 24, 2026'},{title:'Binary Search',lang:'Python',code:'def binary_search(arr, target):\n    left, right = 0, len(arr)-1\n    while left <= right:\n        mid = (left+right)//2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: left = mid+1\n        else: right = mid-1\n    return -1',date:'Apr 22, 2026'},{title:'Factorial Recursive',lang:'Python',code:'def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n-1)',date:'Apr 20, 2026'}];
+let isLight=false;
+
+// ===== AUTH =====
+function authTab(t){
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>el.className='auth-tab'+((['login','signup'][i])===t?' active':''));
+  document.getElementById('auth-login').style.display=t==='login'?'block':'none';
+  document.getElementById('auth-signup').style.display=t==='signup'?'block':'none';
+  document.getElementById('auth-error').style.display='none';
+}
+function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block';}
+function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email){showAuthError('Please enter your email.');return;}
+  if(!pass){showAuthError('Please enter your password.');return;}
+  if(!email.includes('@')){showAuthError('Please enter a valid email.');return;}
+  launchApp(email.split('@')[0]);
+}
+function doSignup(){
+  const name=document.getElementById('su-name').value.trim();
+  const email=document.getElementById('su-email').value.trim();
+  const pass=document.getElementById('su-pass').value;
+  if(!name){showAuthError('Please enter your name.');return;}
+  if(!email||!email.includes('@')){showAuthError('Please enter a valid email.');return;}
+  if(pass.length<6){showAuthError('Password must be at least 6 characters.');return;}
+  launchApp(name);
+}
+function socialLogin(p){launchApp('Student');}
+function launchApp(name){
+  const initials=name.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'ST';
+  currentUser={name,initials};
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-shell').style.display='flex';
+  ['sb-av','top-av','lb-av-me','g-lb-av','dash-lb-av','settings-av'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=initials;});
+  ['sb-name','lb-name-me','g-lb-name','dash-lb-name'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
+  document.getElementById('settings-name').textContent=name;
+  document.getElementById('dash-name').textContent=name.split(' ')[0];
+  loadChallenge();loadMCQ();loadPractice();loadSaved();updateHdr();
+}
+function logout(){if(!confirm('Sign out?'))return;document.getElementById('app-shell').style.display='none';document.getElementById('auth-screen').style.display='flex';}
+
+// ===== NAVIGATION =====
+const panelTitles={dashboard:'Dashboard',editor:'Code Editor',analyzer:'AI Analyzer',chatbot:'Debug AI Chat',game:'Debugging Challenges',mcq:'MCQ Quiz',practice:'Practice Lab',progress:'Progress',saved:'Saved Code',settings:'Settings'};
+function goPanel(id,el){
+  document.querySelectorAll('.panel,.panel-split').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('topbar-title').textContent=panelTitles[id]||id;
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+
+// ===== THEME =====
+function toggleTheme(){
+  isLight=!isLight;
+  document.documentElement.setAttribute('data-theme',isLight?'light':'dark');
+  document.getElementById('theme-btn').textContent=isLight?'☀️':'🌙';
+  const tBtn=document.getElementById('theme-toggle-btn');
+  if(tBtn)tBtn.textContent=isLight?'☀️ Light':'🌙 Dark';
+}
+
+// ===== EDITOR =====
+function setEditorLang(lang,el){
+  editorLang=lang;
+  document.querySelectorAll('.editor-toolbar .pill').forEach(b=>{b.className='pill';});
+  el.className='pill active';
+  document.getElementById('ed-lang-badge').textContent=lang;
+  document.getElementById('ed-lang-status').textContent=lang;
+}
+function updateLineNumbers(){
+  const ta=document.getElementById('editor-code');
+  const lines=ta.value.split('\n').length;
+  document.getElementById('line-nums').textContent=Array.from({length:lines},(_,i)=>i+1).join('\n');
+  document.getElementById('ed-char-count').textContent=ta.value.length+' chars';
+}
+function saveSnippet(){
+  const code=document.getElementById('editor-code').value.trim();
+  if(!code){alert('Nothing to save.');return;}
+  const title=prompt('Name this snippet:','My Snippet');
+  if(!title)return;
+  savedSnippets.unshift({title,lang:editorLang,code,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})});
+  alert('Snippet saved!');
+  loadSaved();
+}
+function shareCode(){
+  const code=document.getElementById('editor-code').value;
+  const link='https://debugquest.app/share/'+btoa(code.substring(0,100)).replace(/[^a-zA-Z0-9]/g,'').substring(0,16);
+  prompt('Share this link (simulated):',link);
+}
+
+async function analyzeEditorCode(){
+  const code=document.getElementById('editor-code').value.trim();
+  if(!code){alert('Please write some code first.');return;}
+  await runAnalysis(code,editorLang,'editor-analysis',true);
+}
+
+async function analyzeCode(){
+  const code=document.getElementById('an-input').value.trim();
+  if(!code){alert('Please paste some code first.');return;}
+  await runAnalysis(code,anaLang,'an-result',false);
+}
+
+function setAnaLang(lang,el){
+  anaLang=lang;
+  document.querySelectorAll('#panel-analyzer .pill').forEach(b=>b.className='pill');
+  el.className='pill active';
+}
+
+async function runAnalysis(code,lang,targetId,withScore){
+  const res=document.getElementById(targetId);
+  res.innerHTML='<div class="fb on fb-info" style="display:block;">🔍 Analyzing '+lang+' code with AI...</div>';
+  const prompt=`You are an expert programming tutor and code analyzer. Analyze this ${lang} code thoroughly. Respond ONLY with a valid JSON object — no markdown, no backticks, no preamble. The JSON must have:
+- "issues": array of objects, each with "type" (exactly "error", "warning", or "ok"), "title" (max 6 words), "body" (1-2 sentences), optionally "fix" (corrected code snippet, 1-2 lines max)
+- "score": integer 0-100 representing overall code quality
+- "timeComplexity": string like "O(n²)" or "O(n log n)"
+- "spaceComplexity": string like "O(1)" or "O(n)"
+- "summary": one sentence overall assessment
+
+Return max 5 issue objects. Include at least one "ok" if the code has anything good.
+
+Code:
+${code}`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message);
+    const text=data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
+    const result=JSON.parse(text);
+    const {issues,score,timeComplexity,spaceComplexity,summary}=result;
+    let html='';
+    if(withScore){
+      const scoreColor=score>=80?'var(--g)':score>=60?'var(--a)':'var(--r)';
+      html+=`<div class="score-ring" style="margin-bottom:12px;">
+        <div class="score-circle" style="border-color:${scoreColor};">
+          <div class="score-num" style="color:${scoreColor};">${score}</div>
+          <div class="score-lbl-small">/ 100</div>
+        </div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;">Code Quality Score</div><div style="font-size:12px;color:var(--text2);">${summary}</div></div>
+      </div>
+      <div class="complexity-row">
+        <div class="complexity-card"><div class="comp-val">${timeComplexity||'–'}</div><div class="comp-lbl">Time Complexity</div></div>
+        <div class="complexity-card"><div class="comp-val">${spaceComplexity||'–'}</div><div class="comp-lbl">Space Complexity</div></div>
+      </div>`;
+    } else {
+      html+=`<div class="complexity-row" style="margin-bottom:14px;">
+        <div class="complexity-card"><div class="comp-val">${timeComplexity||'–'}</div><div class="comp-lbl">Time Complexity</div></div>
+        <div class="complexity-card"><div class="comp-val">${spaceComplexity||'–'}</div><div class="comp-lbl">Space Complexity</div></div>
+        <div class="complexity-card"><div class="comp-val">${score||'?'}</div><div class="comp-lbl">Quality Score</div></div>
+      </div>`;
+    }
+    html+=issues.map(iss=>`<div class="issue-card i${iss.type==='error'?'e':iss.type==='warning'?'w':'o'}">
+      <div class="it">${iss.type==='error'?'❌ Error':iss.type==='warning'?'⚠️ Warning':'✅ Good'}: ${iss.title}</div>
+      <div class="ib">${iss.body}</div>
+      ${iss.fix?`<div class="ifix">${iss.fix}</div>`:''}
+    </div>`).join('');
+    res.innerHTML=html;
+    if(document.getElementById('ed-issues-count')){
+      const errs=issues.filter(i=>i.type==='error').length;
+      document.getElementById('ed-issues-count').style.display=errs>0?'inline':'none';
+    }
+  }catch(e){
+    res.innerHTML=`<div class="fb on fb-err" style="display:block;">⚠️ Analysis failed. Check your API key or connection.<br><small>Error: ${e.message}</small></div>`;
+  }
+}
+
+// ===== CHATBOT =====
+function chatSuggest(el){
+  document.getElementById('chat-input').value=el.textContent;
+  sendChat();
+}
+function chatKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  addChatMsg(msg,'user');
+  document.getElementById('chat-suggestions').style.display='none';
+  const typing=addChatMsg('Thinking...','ai');
+  const prompt=`You are an expert CS tutor and debugging assistant for students. Answer clearly, concisely, and in simple language. Focus on practical explanations with examples. Keep responses under 150 words unless code examples are needed.\n\nStudent question: ${msg}`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
+    const data=await r.json();
+    const text=data.content.map(i=>i.text||'').join('');
+    typing.querySelector('.msg-bubble').textContent=text;
+    typing.querySelector('.msg-time').textContent='just now';
+  }catch(e){
+    typing.querySelector('.msg-bubble').textContent='⚠️ Could not connect to AI. Check your API configuration.';
+  }
+}
+function addChatMsg(text,role){
+  const wrap=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  div.innerHTML=`<div class="msg-bubble">${text}</div><div class="msg-time">${role==='user'?'you':'AI'}</div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop=wrap.scrollHeight;
+  return div;
+}
+
+// ===== GAME =====
+function buildProgress(){
+  const row=document.getElementById('prog-row');
+  row.innerHTML='';
+  challenges.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='ps'+(i<currentCh?' done':i===currentCh?' cur':'');
+    row.appendChild(d);
+  });
+}
+function loadChallenge(){
+  const c=challenges[currentCh];
+  document.getElementById('code-in').value=c.buggy;
+  document.getElementById('ch-title').textContent=c.title;
+  document.getElementById('ch-desc').textContent=c.desc;
+  const bb=document.getElementById('bug-badge');
+  bb.textContent=c.type+' Error';
+  bb.className='badge '+c.typeClass;
+  const db=document.getElementById('diff-badge');
+  db.textContent=c.diff;
+  db.style.cssText=c.diffStyle+'font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;';
+  document.getElementById('hint-box').textContent='💡 '+c.hint;
+  document.getElementById('hint-box').className='hint';
+  document.getElementById('game-fb').className='fb';
+  document.getElementById('nxt').className='nxt';
+  document.getElementById('g-ch-num').textContent=currentCh+1;
+  document.getElementById('g-ch-total').textContent=challenges.length;
+  document.getElementById('g-type').textContent=c.type;
+  document.getElementById('g-diff').textContent=c.diff;
+  hintOn=false;revealed=false;
+  buildProgress();
+}
+function toggleHint(){hintOn=!hintOn;document.getElementById('hint-box').className='hint'+(hintOn?' on':'');}
+function norm(s){return s.replace(/\s+/g,' ').trim();}
+function checkSol(){
+  if(revealed)return;
+  const val=document.getElementById('code-in').value;
+  const fb=document.getElementById('game-fb');
+  const nw=document.getElementById('nxt');
+  const c=challenges[currentCh];
+  if(norm(val)===norm(c.fix)||(c.fix2&&norm(val)===norm(c.fix2))){
+    const gain=hintOn?15:20;
+    xp+=gain;solvedBugs++;
+    updateHdr();updateStats();
+    fb.className='fb on fb-ok';
+    fb.innerHTML='<b>✅ Correct!</b> +'+gain+' XP earned<br><br>'+c.explain;
+    nw.className='nxt on';
+    buildProgress();
+  } else {
+    fb.className='fb on fb-err';
+    fb.innerHTML='<b>❌ Not quite.</b> Check every character — colons, parentheses, indentation, and operators all matter.';
+  }
+}
+function giveUp(){
+  document.getElementById('code-in').value=challenges[currentCh].fix;
+  document.getElementById('game-fb').className='fb on fb-err';
+  document.getElementById('game-fb').innerHTML='<b>👁 Answer revealed.</b> '+challenges[currentCh].explain;
+  document.getElementById('nxt').className='nxt on';
+  revealed=true;
+}
+function nextCh(){currentCh=(currentCh+1)%challenges.length;loadChallenge();}
+
+// ===== MCQ =====
+const topicKeys=['Python','JavaScript','DSA','OOP'];
+const topicLabels={Python:'Python Basics',JavaScript:'JavaScript',DSA:'Data Structures',OOP:'OOP Concepts'};
+function loadMCQ(){
+  const tr=document.getElementById('topic-row');
+  tr.innerHTML='';
+  topicKeys.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='pill'+(t===currentTopic?' active':'');
+    b.textContent=topicLabels[t];
+    b.onclick=()=>selectTopic(t,b);
+    tr.appendChild(b);
+  });
+  renderMCQ();
+}
+function selectTopic(t,el){
+  currentTopic=t;mcqAnswers={};mcqSubmitted=false;
+  document.querySelectorAll('#topic-row .pill').forEach(b=>b.className='pill');
+  el.className='pill active';
+  renderMCQ();
+}
+function renderMCQ(){
+  const qs=mcqBank[currentTopic];
+  const c=document.getElementById('mcq-container');
+  c.innerHTML='';
+  document.getElementById('mcq-submit').style.display='inline-block';
+  qs.forEach((q,qi)=>{
+    const card=document.createElement('div');
+    card.className='mcq-card';
+    card.innerHTML=`<div class="mcq-meta"><span class="mcq-num">Q${qi+1} of ${qs.length}</span><span class="badge badge-purple">${topicLabels[currentTopic]}</span></div>
+      <div class="mcq-q">${q.q}</div>
+      <div class="mcq-opts" id="opts-${qi}">${q.opts.map((o,oi)=>`<div class="mcq-opt" id="opt-${qi}-${oi}" onclick="selectOpt(${qi},${oi})"><span class="opt-letter">${'ABCD'[oi]}</span>${o}</div>`).join('')}</div>
+      <div class="mcq-explain" id="exp-${qi}">${q.explain}</div>`;
+    c.appendChild(card);
+  });
+}
+function selectOpt(qi,oi){
+  if(mcqSubmitted)return;
+  mcqAnswers[qi]=oi;
+  document.querySelectorAll(`#opts-${qi} .mcq-opt`).forEach((el,i)=>el.className='mcq-opt'+(i===oi?' selected':''));
+}
+function submitMCQ(){
+  const qs=mcqBank[currentTopic];
+  if(Object.keys(mcqAnswers).length<qs.length){alert('Please answer all '+qs.length+' questions first.');return;}
+  mcqSubmitted=true;
+  let correct=0;
+  qs.forEach((q,qi)=>{
+    const chosen=mcqAnswers[qi];
+    document.querySelectorAll(`#opts-${qi} .mcq-opt`).forEach((el,i)=>el.className='mcq-opt'+(i===q.ans?' correct':i===chosen&&chosen!==q.ans?' wrong':''));
+    document.getElementById('exp-'+qi).className='mcq-explain on';
+    if(chosen===q.ans)correct++;
+  });
+  const gain=correct*10;
+  mcqCorrect+=correct;xp+=gain;
+  updateHdr();updateStats();
+  const c=document.getElementById('mcq-container');
+  const banner=document.createElement('div');
+  banner.className='score-banner';
+  const pct=Math.round(correct/qs.length*100);
+  banner.innerHTML=`<div class="score-big">${correct}/${qs.length}</div><div style="font-size:13px;color:var(--text2);margin-top:6px;">${pct}% correct · +${gain} XP · ${pct>=80?'🎉 Excellent!':pct>=60?'👍 Good effort!':'💪 Keep practising!'}</div>`;
+  c.prepend(banner);
+  document.getElementById('mcq-submit').style.display='none';
+}
+function resetMCQ(){mcqAnswers={};mcqSubmitted=false;renderMCQ();}
+
+// ===== PRACTICE LAB =====
+function loadPractice(){
+  const c=document.getElementById('practice-problems');
+  c.innerHTML='';
+  practiceProblems.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.marginBottom='14px';
+    card.innerHTML=`<div style="display:flex;align-items:center;margin-bottom:10px;">
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px;">${p.title}</div>
+        <div style="font-size:12px;color:var(--text2);">${p.lang} · <span class="badge ${p.difficulty==='Easy'?'badge-green':p.difficulty==='Medium'?'badge-amber':'badge-red'}">${p.difficulty}</span></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">${p.desc}</div>
+    <textarea class="code-ed" id="prac-${i}" style="min-height:120px;">${p.starter}</textarea>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-primary" onclick="checkPractice(${i})">▶ Check</button>
+      <button class="btn btn-sm" onclick="showHintPrac(${i},'${p.hint.replace(/'/g,"\\'")}')" >💡 Hint</button>
+      <button class="btn btn-sm" onclick="showSolPrac(${i},'${p.solution.replace(/\n/g,'\\n').replace(/'/g,"\\'")}')">👁 Solution</button>
+    </div>
+    <div class="fb" id="prac-fb-${i}"></div>`;
+    c.appendChild(card);
+  });
+}
+function checkPractice(i){
+  const val=document.getElementById('prac-'+i).value.trim();
+  const fb=document.getElementById('prac-fb-'+i);
+  if(val.includes('pass')&&!practiceProblems[i].solution.includes('pass')){
+    fb.className='fb on fb-err';fb.innerHTML='<b>❌</b> Looks like you haven\'t implemented the solution yet!';return;
+  }
+  fb.className='fb on fb-ok';
+  fb.innerHTML='<b>✅ Looks good!</b> Click Solution to compare with the model answer. +10 XP';
+  xp+=10;updateHdr();updateStats();
+}
+function showHintPrac(i,hint){
+  const fb=document.getElementById('prac-fb-'+i);
+  fb.className='fb on fb-info';fb.innerHTML='💡 <b>Hint:</b> '+hint;
+}
+function showSolPrac(i,sol){
+  document.getElementById('prac-'+i).value=sol.replace(/\\n/g,'\n');
+  const fb=document.getElementById('prac-fb-'+i);
+  fb.className='fb on fb-err';fb.innerHTML='<b>👁 Solution revealed.</b> Study it carefully!';
+}
+
+// ===== SAVED =====
+function loadSaved(){
+  const c=document.getElementById('saved-list');
+  if(!savedSnippets.length){c.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">No saved snippets yet. Go to the Code Editor and save your work!</div>';return;}
+  c.innerHTML='';
+  savedSnippets.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.className='snippet-card';
+    card.innerHTML=`<div style="display:flex;align-items:center;">
+      <div style="flex:1;"><div class="snippet-title">${s.title}</div><div class="snippet-preview">${s.code.split('\n')[0]}</div></div>
+      <span class="badge badge-purple" style="margin-left:10px;">${s.lang}</span>
+    </div>
+    <div class="snippet-meta">
+      <span class="snippet-date">Saved ${s.date}</span>
+      <button class="btn btn-sm" onclick="openSnippet(${i})" style="margin-left:auto;">Open in Editor</button>
+      <button class="btn btn-sm" style="color:var(--r);" onclick="deleteSnippet(${i})">Delete</button>
+    </div>`;
+    c.appendChild(card);
+  });
+}
+function openSnippet(i){
+  document.getElementById('editor-code').value=savedSnippets[i].code;
+  updateLineNumbers();
+  goPanel('editor',null);
+}
+function deleteSnippet(i){
+  if(!confirm('Delete this snippet?'))return;
+  savedSnippets.splice(i,1);
+  loadSaved();
+}
+
+// ===== HELPERS =====
+function updateHdr(){
+  document.getElementById('hdr-xp').textContent=xp;
+  const lv=Math.floor(xp/200)+1;
+  document.getElementById('hdr-lv').textContent=lv;
+  document.getElementById('xp-bar').style.width=((xp%200)/200*100)+'%';
+  document.getElementById('hdr-streak').textContent=streak;
+  document.getElementById('sb-role').textContent='Level '+lv+' · '+xp+' XP';
+  ['lb-xp-me','g-lb-xp','dash-lb-xp'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=xp+(id==='g-lb-xp'?'':' XP');});
+}
+function updateStats(){
+  ['d-bugs','p-bugs'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=solvedBugs;});
+  ['d-mcq','p-mcq'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=mcqCorrect;});
+  ['d-xp','p-xp2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=xp;});
+}
+function setFontSize(sz){document.querySelectorAll('.code-ed,.code-textarea').forEach(el=>el.style.fontSize=sz+'px');}
+function showShareModal(){const link='https://debugquest.app/code/'+Math.random().toString(36).substr(2,10);prompt('Share this link:',link);}
+
+// Initialize line numbers
+document.addEventListener('DOMContentLoaded',()=>{updateLineNumbers();});
+document.getElementById('editor-code').addEventListener('keydown',e=>{
+  if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.substring(0,s)+'    '+e.target.value.substring(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+4;updateLineNumbers();}
+});
+document.getElementById('editor-code').addEventListener('mousemove',e=>{
+  const ta=e.target;const lines=ta.value.substr(0,ta.selectionStart).split('\n');
+  document.getElementById('ed-ln').textContent=lines.length;
+  document.getElementById('ed-col').textContent=lines[lines.length-1].length+1;
+  updateLineNumbers();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('auth-screen').style.display!=='none'){
+    const loginVisible=document.getElementById('auth-login').style.display!=='none';
+    if(loginVisible)doLogin();else doSignup();
+  }
+});
+</script>
+</body>
+</html>
